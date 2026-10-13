@@ -105,11 +105,30 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        const limitHeader = response.headers.get("x-ratelimit-limit-requests");
+        const remainingHeader = response.headers.get("x-ratelimit-remaining-requests");
+        const resetHeader = response.headers.get("x-ratelimit-reset-requests");
+
+        const rateLimit =
+          limitHeader && remainingHeader
+            ? {
+                limit: parseInt(limitHeader, 10),
+                remaining: parseInt(remainingHeader, 10),
+                percentage:
+                  Math.round(
+                    (parseInt(remainingHeader, 10) / parseInt(limitHeader, 10)) * 1000
+                  ) / 10,
+                reset: resetHeader || "daily",
+                provider: "Groq Whisper",
+              }
+            : undefined;
+
         return NextResponse.json({
           success: true,
           transcription: text,
           detectedLanguage: detectedLanguage === "ur" ? "Urdu (اردو)" : detectedLanguage,
           provider: "Groq Whisper Large v3",
+          rateLimit,
         });
       } catch (err: unknown) {
         const error = err as Error;

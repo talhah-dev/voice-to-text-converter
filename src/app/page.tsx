@@ -5,6 +5,7 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { UploadZone } from '@/components/UploadZone';
 import { AudioQueueList } from '@/components/AudioQueueList';
 import { TranscriptionResults } from '@/components/TranscriptionResults';
+import { RateLimitBadge, RateLimitData } from '@/components/RateLimitBadge';
 import { Toast } from '@/components/Toast';
 import { AudioItem, LanguageMode } from '@/types';
 
@@ -12,6 +13,7 @@ export default function Home() {
   const [items, setItems] = useState<AudioItem[]>([]);
   const [languageMode, setLanguageMode] = useState<LanguageMode>('english');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [rateLimitData, setRateLimitData] = useState<RateLimitData | null>(null);
 
   // Toast state
   const [toast, setToast] = useState<{
@@ -88,6 +90,11 @@ export default function Home() {
           throw new Error(data.error || 'Failed to transcribe audio');
         }
 
+        // Live update rate limit quota badge
+        if (data.rateLimit) {
+          setRateLimitData(data.rateLimit);
+        }
+
         setItems((prev) =>
           prev.map((it) =>
             it.id === item.id
@@ -123,7 +130,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans selection:bg-zinc-900 selection:text-white dark:selection:bg-zinc-100 dark:selection:text-zinc-900">
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-6">
+      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 flex flex-col gap-6">
+        {/* Top bar with real-time API Quota Badge */}
+        <div className="flex items-center justify-end w-full">
+          <RateLimitBadge initialData={rateLimitData} />
+        </div>
+
         {/* Minimal Title */}
         <div className="text-center">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
