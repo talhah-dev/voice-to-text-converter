@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { UploadZone } from '@/components/UploadZone';
 import { AudioQueueList } from '@/components/AudioQueueList';
@@ -8,12 +8,18 @@ import { TranscriptionResults } from '@/components/TranscriptionResults';
 import { RateLimitBadge, RateLimitData } from '@/components/RateLimitBadge';
 import { Toast } from '@/components/Toast';
 import { AudioItem, LanguageMode } from '@/types';
+import {
+  saveAudioItemsToStorage,
+  loadAudioItemsFromStorage,
+  clearAllAudioItemsFromStorage,
+} from '@/lib/storage';
 
 export default function Home() {
   const [items, setItems] = useState<AudioItem[]>([]);
   const [languageMode, setLanguageMode] = useState<LanguageMode>('english');
   const [isProcessing, setIsProcessing] = useState(false);
   const [rateLimitData, setRateLimitData] = useState<RateLimitData | null>(null);
+  const isLoadedRef = useRef(false);
 
   // Toast state
   const [toast, setToast] = useState<{
@@ -24,6 +30,26 @@ export default function Home() {
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
   };
+
+  // Load saved voices and transcriptions from persistent storage on mount
+  useEffect(() => {
+    loadAudioItemsFromStorage()
+      .then((savedItems) => {
+        if (savedItems.length > 0) {
+          setItems(savedItems);
+        }
+      })
+      .finally(() => {
+        isLoadedRef.current = true;
+      });
+  }, []);
+
+  // Save to persistent storage whenever items change (after initial load)
+  useEffect(() => {
+    if (isLoadedRef.current) {
+      saveAudioItemsToStorage(items);
+    }
+  }, [items]);
 
   // Add multiple files to queue
   const handleFilesSelected = (newFiles: File[]) => {
@@ -59,6 +85,8 @@ export default function Home() {
       if (item.audioUrl) URL.revokeObjectURL(item.audioUrl);
     });
     setItems([]);
+    clearAllAudioItemsFromStorage();
+    showToast('Cleared all voice notes and transcriptions', 'info');
   };
 
   // Process all files in queue
