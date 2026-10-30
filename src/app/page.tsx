@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { MediaTabToggle } from '@/components/MediaTabToggle';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { UploadZone } from '@/components/UploadZone';
+import { VideoUploadZone } from '@/components/VideoUploadZone';
 import { AudioQueueList } from '@/components/AudioQueueList';
 import { TranscriptionResults } from '@/components/TranscriptionResults';
 import { RateLimitBadge, RateLimitData } from '@/components/RateLimitBadge';
 import { Toast } from '@/components/Toast';
-import { AudioItem, LanguageMode } from '@/types';
+import { AudioItem, LanguageMode, MediaTab } from '@/types';
 import {
   saveAudioItemsToStorage,
   loadAudioItemsFromStorage,
@@ -16,6 +18,7 @@ import {
 
 export default function Home() {
   const [items, setItems] = useState<AudioItem[]>([]);
+  const [mediaTab, setMediaTab] = useState<MediaTab>('audio');
   const [languageMode, setLanguageMode] = useState<LanguageMode>('english');
   const [isProcessing, setIsProcessing] = useState(false);
   const [rateLimitData, setRateLimitData] = useState<RateLimitData | null>(null);
@@ -51,7 +54,7 @@ export default function Home() {
     }
   }, [items]);
 
-  // Add multiple files to queue
+  // Add multiple audio files to queue
   const handleFilesSelected = (newFiles: File[]) => {
     const newItems: AudioItem[] = newFiles.map((file) => ({
       id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
@@ -61,12 +64,22 @@ export default function Home() {
       audioUrl: URL.createObjectURL(file),
       status: 'idle',
       timestamp: Date.now(),
+      mediaType: 'audio',
     }));
 
     setItems((prev) => [...prev, ...newItems]);
     showToast(
       `Added ${newFiles.length} ${newFiles.length === 1 ? 'audio file' : 'audio files'}`,
       'info'
+    );
+  };
+
+  // Add extracted video audio items to queue
+  const handleVideoExtracted = (newItems: AudioItem[]) => {
+    setItems((prev) => [...prev, ...newItems]);
+    showToast(
+      `Audio extracted from ${newItems.length} ${newItems.length === 1 ? 'video' : 'videos'}! Ready to transcribe.`,
+      'success'
     );
   };
 
@@ -86,7 +99,7 @@ export default function Home() {
     });
     setItems([]);
     clearAllAudioItemsFromStorage();
-    showToast('Cleared all voice notes and transcriptions', 'info');
+    showToast('Cleared all items', 'info');
   };
 
   // Process all files in queue
@@ -115,7 +128,7 @@ export default function Home() {
         const data = await res.json();
 
         if (!res.ok || !data.success) {
-          throw new Error(data.error || 'Failed to transcribe audio');
+          throw new Error(data.error || 'Failed to transcribe');
         }
 
         // Live update rate limit quota badge
@@ -167,9 +180,16 @@ export default function Home() {
         {/* Minimal Title */}
         <div className="text-center">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
-            Voice to Text
+            Voice & Video to Text
           </h1>
         </div>
+
+        {/* Media Tab Selector (Audio vs Video) */}
+        <MediaTabToggle
+          activeTab={mediaTab}
+          onChange={setMediaTab}
+          disabled={isProcessing}
+        />
 
         {/* Clean Language Mode Selector */}
         <LanguageToggle
@@ -178,13 +198,20 @@ export default function Home() {
           disabled={isProcessing}
         />
 
-        {/* Upload Zone */}
-        <UploadZone
-          onFilesSelected={handleFilesSelected}
-          disabled={isProcessing}
-        />
+        {/* Upload Zone (Switches based on active media tab) */}
+        {mediaTab === 'audio' ? (
+          <UploadZone
+            onFilesSelected={handleFilesSelected}
+            disabled={isProcessing}
+          />
+        ) : (
+          <VideoUploadZone
+            onVideoExtracted={handleVideoExtracted}
+            disabled={isProcessing}
+          />
+        )}
 
-        {/* Uploaded Audio Files Queue */}
+        {/* Uploaded Audio/Video Files Queue */}
         <AudioQueueList
           items={items}
           onRemoveItem={handleRemoveItem}

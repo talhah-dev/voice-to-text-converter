@@ -1,5 +1,7 @@
 export type LanguageMode = 'english' | 'urdu' | 'original';
 
+export type MediaTab = 'audio' | 'video';
+
 export type AIProvider = 'groq' | 'openai' | 'gemini';
 
 export interface AudioItem {
@@ -15,6 +17,10 @@ export interface AudioItem {
   modeUsed?: LanguageMode;
   error?: string;
   timestamp: number;
+  mediaType?: 'audio' | 'video';
+  originalVideoName?: string;
+  originalVideoSize?: number;
+  isExtractingAudio?: boolean;
 }
 
 export interface TranscribeRequestConfig {

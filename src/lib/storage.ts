@@ -15,6 +15,9 @@ interface StoredVoiceRecord {
   modeUsed?: LanguageMode;
   error?: string;
   timestamp: number;
+  mediaType?: 'audio' | 'video';
+  originalVideoName?: string;
+  originalVideoSize?: number;
 }
 
 function openDB(): Promise<IDBDatabase> {
@@ -67,6 +70,9 @@ export async function saveAudioItemsToStorage(items: AudioItem[]): Promise<void>
         modeUsed: item.modeUsed,
         error: item.error,
         timestamp: item.timestamp,
+        mediaType: item.mediaType,
+        originalVideoName: item.originalVideoName,
+        originalVideoSize: item.originalVideoSize,
       };
       store.put(record);
     }
@@ -113,6 +119,9 @@ export async function loadAudioItemsFromStorage(): Promise<AudioItem[]> {
         modeUsed: record.modeUsed,
         error: record.error,
         timestamp: record.timestamp,
+        mediaType: record.mediaType,
+        originalVideoName: record.originalVideoName,
+        originalVideoSize: record.originalVideoSize,
       };
     });
   } catch (err) {

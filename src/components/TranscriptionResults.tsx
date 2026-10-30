@@ -22,11 +22,12 @@ export const TranscriptionResults: React.FC<TranscriptionResultsProps> = ({
 
   if (doneItems.length === 0) return null;
 
-  // Format all voices combined with clear headings and 2-line gaps
+  // Format all voices/videos combined with clear headings and 2-line gaps
   const getFormattedAllText = () => {
     return doneItems
       .map((item, index) => {
-        const header = `Voice ${index + 1}: ${item.name}`;
+        const label = item.mediaType === 'video' ? 'Video' : 'Voice';
+        const header = `${label} ${index + 1}: ${item.name}`;
         return `${header}\n${item.transcription}`;
       })
       .join('\n\n\n'); // Generous separation gap between voices
@@ -46,11 +47,12 @@ export const TranscriptionResults: React.FC<TranscriptionResultsProps> = ({
 
   const handleCopySingle = async (item: AudioItem, index: number) => {
     if (!item.transcription) return;
-    const textToCopy = `Voice ${index + 1}: ${item.name}\n${item.transcription}`;
+    const label = item.mediaType === 'video' ? 'Video' : 'Voice';
+    const textToCopy = `${label} ${index + 1}: ${item.name}\n${item.transcription}`;
     try {
       await navigator.clipboard.writeText(textToCopy);
       setCopiedId(item.id);
-      onTriggerToast(`Copied Voice ${index + 1} to clipboard!`, 'success');
+      onTriggerToast(`Copied ${label} ${index + 1} to clipboard!`, 'success');
       setTimeout(() => setCopiedId(null), 2000);
     } catch {
       onTriggerToast('Failed to copy to clipboard', 'error');
@@ -136,7 +138,7 @@ export const TranscriptionResults: React.FC<TranscriptionResultsProps> = ({
               <div className="flex items-center justify-between gap-3 pb-3 border-b border-zinc-100 dark:border-zinc-800/80">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="shrink-0 text-xs font-bold px-2.5 py-1 rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-mono tracking-wide shadow-2xs">
-                    Voice {index + 1}
+                    {item.mediaType === 'video' ? 'Video' : 'Voice'} {index + 1}
                   </span>
                   
                   <span className="text-xs sm:text-sm font-medium text-zinc-900 dark:text-zinc-200 truncate">
